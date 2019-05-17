@@ -41,6 +41,10 @@
   width: 34px;
 }
 
+.piece {
+  width: 20px;
+}
+
 map {
   display: inline;
 }
@@ -56,42 +60,4 @@ map {
   to {
     transform: rotate(360deg);
   }
-}
-
-.black-king {
-  background-image: url('Chess_symbols.png');
-  width: 60px;
-  height: 60px;
-  background-position-y: 230px
-}
-
-.black-queen {
-  background-image: url('Chess_symbols.png');
-  width: 60px;
-  height: 60px;
-  background-position-y: 230px;
-  background-position-x: 195px
-}
-
-.black-knight {
-  background-image: url('Chess_symbols.png');
-  width: 60px;
-  height: 60px;
-  background-position-y: 230px;
-  background-position-x: 130px
-}
-
-.black-pawn {
-  background-image: url('Chess_symbols.png');
-  width: 60px;
-  height: 60px;
-  background-position-y: 230px;
-  background-position-x: 60px
-}
-
-.white-king {
-  background-image: url('Chess_symbols.png');
-  width: 60px;
-  height: 60px;
-  background-position-y: 0px
 }
