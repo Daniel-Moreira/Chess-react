@@ -1,6 +1,9 @@
 import React from 'react';
 import './App.css'; 
 const images = require.context('./icons', true);
+const NUMBER_ROWS = 8
+const NUMBER_COLUMNS = 8
+const QUEEN = 6
 
 class App extends React.Component {
   constructor() {
@@ -17,10 +20,25 @@ class App extends React.Component {
   }
 }
 
-class Board extends React.Component {
+class Board extends React.Component { 
   constructor (props) {
     super(props)
-    this.state = {NUMBER_ROWS: 8, NUMBER_COLUMNS: 8, hasPiece: false, piece_selected: {}}
+
+    let bs = []
+
+    bs[0] = [2, 3, 4, 5, 6, 4, 3, 2]
+    bs[1] = [1, 1, 1, 1, 1, 1, 1, 1]
+    for(let i = 2; i < NUMBER_ROWS-2; i++) {
+      let c = []
+      for(let j = 0; j < NUMBER_COLUMNS; j++) {
+        c[j] = 0
+      }
+      bs[i] = c
+    }
+    bs[6] = [1, 1, 1, 1, 1, 1, 1, 1]
+    bs[7] = [2, 3, 4, 5, 6, 4, 3, 2]
+
+    this.state = { hasPiece: false, piece_selected: {}, board_state: bs }
   }
 
   putPiece(from, to) {
@@ -37,8 +55,14 @@ class Board extends React.Component {
     object.setState({clicked: !c})
   }
 
-  promotePawn (piece) {
+  promotePawn (board, piece, x, y) {
+    let bs = board.state.board_state
+    bs[x][y] = QUEEN
+    
+    board.setState({board_state: bs})
     piece.setState({piece_name: 'queen'})
+
+    console.log(board.state.board_state)
   }
 
   movePawn (board, square) {
@@ -47,11 +71,11 @@ class Board extends React.Component {
     const square_position = square.props.position
 
     const piece = board.state.piece_selected
-    const piece_isBlack = piece.state.piece_color === 'black' ? 1 : -1
+    const piece_isBlack = piece.state.piece_color === 'black' ? -1 : 1
     const piece_position = board.state.piece_selected.props.position
 
     let moved = false
-    if(!square_name && piece_position[0] === (piece_isBlack === 1 ? board.state.NUMBER_ROWS-1 : 1) 
+    if(!square_name && piece_position[0] === (piece_isBlack === 1 ? NUMBER_ROWS-2 : 1)
       && square_position[1] === piece_position[1] 
       && square_position[0]+(piece_isBlack*2) === piece_position[0]) {
         moved = true
@@ -64,13 +88,29 @@ class Board extends React.Component {
       && square_position[0]+piece_isBlack === piece_position[0]) {
         moved = true
     }
-    if(moved) {
-      board.changeColor(piece)
-      board.putPiece(piece, square)
-      board.setState({hasPiece: false, piece_selected: {}})
 
-      if(square_position[0] === (piece_isBlack === 1 ? 0 : board.state.NUMBER_ROWS)) board.promotePawn(square)
+    if(moved) {
+      board.movePiece(board, piece, square, piece_position, square_position)
+      
+      if(square_position[0] === (piece_isBlack === 1 ? 0 : NUMBER_ROWS-1)) board.promotePawn(board, square, ...square_position)
     }
+  }
+
+  movePiece (board, piece, square, piece_position, square_position) {
+    board.changeColor(piece)
+    board.putPiece(piece, square)
+    board.setState({hasPiece: false, piece_selected: {}})
+
+    board.registerChange(board, ...piece_position, ...square_position)
+  }
+
+  registerChange (board, piece_x, piece_y, new_x, new_y) {
+    let bs = this.state.board_state
+
+    bs[new_x][new_y] = bs[piece_x][piece_y]
+    bs[piece_x][piece_y] = 0
+    
+    board.setState({board_state: bs})
   }
 
   moveRook (board, square) {
@@ -80,6 +120,7 @@ class Board extends React.Component {
 
     const piece = board.state.piece_selected
     const piece_position = board.state.piece_selected.props.position
+    const piece_color = piece.state.piece_color
 
     let moved = false
     if(!square_name && square_position[1] === piece_position[1] 
@@ -90,66 +131,63 @@ class Board extends React.Component {
       && square_position[0] !== piece_position[0]) {
         moved = true
     }
-    else if(square_name && square_color !== piece.state.piece_color && (square_position[1]-1 === piece_position[1] || square_position[1]+1 === piece_position[1]) 
+    else if(square_name && square_color !== piece_color && (square_position[1]-1 === piece_position[1] || square_position[1]+1 === piece_position[1]) 
       && square_position[0] === piece_position[0]) {
         moved = true
     }
     
-    if(moved) {
-      board.changeColor(piece)
-      board.putPiece(piece, square)
-      board.setState({hasPiece: false, piece_selected: {}})
-    }
+    if(moved)
+      board.movePiece(board, piece, square, piece_position, square_position)
   }
 
   moveKnight (board, square) {
     const square_name = square.state.piece_name
     const square_color = square.state.piece_color
     const square_position = square.props.position
-
+    
     const piece = board.state.piece_selected
     const piece_position = board.state.piece_selected.props.position
+    const piece_color = piece.state.piece_color
 
     let moved = false
-    // eat square_color !== piece.state.piece_color
-    if(!square_name && square_position[1]+1 === piece_position[1] 
-      && square_position[0]+3 === piece_position[0]) {
-        moved = true
-    }
-    else if(!square_name && square_position[1]-1 === piece_position[1] 
-      && square_position[0]+3 !== piece_position[0]) {
-        moved = true
-    }
-    else if(!square_name && square_position[1]+3 === piece_position[1] 
-      && square_position[0]+1 !== piece_position[0]) {
-        moved = true
-    }
-    else if(!square_name && square_position[1]-3 === piece_position[1] 
-      && square_position[0]+1 !== piece_position[0]) {
-        moved = true
-    }
-    else if(!square_name && square_position[1]-1 === piece_position[1] 
-      && square_position[0]-3 === piece_position[0]) {
-        moved = true
-    }
-    else if(!square_name && square_position[1]+1 === piece_position[1] 
-      && square_position[0]-3 !== piece_position[0]) {
-        moved = true
-    }
-    else if(!square_name && square_position[1]-3 === piece_position[1] 
-      && square_position[0]-1 !== piece_position[0]) {
-        moved = true
-    }
-    else if(!square_name && square_position[1]+3 === piece_position[1] 
-      && square_position[0]-1 !== piece_position[0]) {
-        moved = true
-    }
     
-    if(moved) {
-      board.changeColor(piece)
-      board.putPiece(piece, square)
-      board.setState({hasPiece: false, piece_selected: {}})
+    if(square_color === piece_color) return
+
+    if(square_position[1]-1 === piece_position[1] 
+      && square_position[0]+2 === piece_position[0]) {
+        moved = true
     }
+    else if(square_position[1]+1 === piece_position[1] 
+      && square_position[0]+2  === piece_position[0]) {
+        moved = true
+    }
+    else if(square_position[1]+2 === piece_position[1] 
+      && square_position[0]+1 === piece_position[0]) {
+        moved = true
+    }
+    else if(square_position[1]-2 === piece_position[1] 
+      && square_position[0]+1 === piece_position[0]) {
+        moved = true
+    }
+    else if(square_position[1]-1 === piece_position[1] 
+      && square_position[0]-2 === piece_position[0]) {
+        moved = true
+    }
+    else if(square_position[1]+1 === piece_position[1] 
+      && square_position[0]-2 === piece_position[0]) {
+        moved = true
+    }
+    else if(square_position[1]-2 === piece_position[1] 
+      && square_position[0]-1 === piece_position[0]) {
+        moved = true
+    }
+    else if(square_position[1]+2 === piece_position[1] 
+      && square_position[0]-1 === piece_position[0]) {
+        moved = true
+    }
+
+    if(moved)
+      board.movePiece(board, piece, square, piece_position, square_position)
   }
 
   moveBishop (board, square) {
@@ -189,25 +227,45 @@ class Board extends React.Component {
   {
     return(pieces.map((p, y) => { return( <Square position={[parseInt(x), y]} piece={ p } color = { color } handleClick={ this.handleClick }/> )}))
   }
+
+  setBoard () {
+    let bs = []
+
+    bs[0] = [2, 3, 4, 5, 6, 4, 3, 2]
+    bs[1] = [1, 1, 1, 1, 1, 1, 1, 1]
+    for(let i = 2; i < NUMBER_ROWS-2; i++) {
+      let c = []
+      for(let j = 0; j < NUMBER_COLUMNS; j++) {
+        c[j] = 0
+      }
+      bs[i] = c
+    }
+    bs[6] = [1, 1, 1, 1, 1, 1, 1, 1]
+    bs[7] = [2, 3, 4, 5, 6, 4, 3, 2]
+
+    this.setState({board_state: bs}, () => console.log(this.state.board_state))
+
+  }
   
-  render_squares (NUMBER_ROWS, NUMBER_COLUMNS) {
+  render_squares () {
     let rows = {}
     rows[0] = [`rook`, `knight`, `bishop`, `queen`, `king`, `bishop`, `knight`, `rook`]
     rows[1] = ['pawn', 'pawn', 'pawn', 'pawn', 'pawn', 'pawn', 'pawn', 'pawn']
-    rows[7] = ['pawn', 'pawn', 'pawn', 'pawn', 'pawn', 'pawn', 'pawn', 'pawn']
-    rows[8] = [`rook`, `knight`, `bishop`, `queen`, `king`, `bishop`, `knight`, `rook`]
+    rows[6] = ['pawn', 'pawn', 'pawn', 'pawn', 'pawn', 'pawn', 'pawn', 'pawn']
+    rows[7] = [`rook`, `knight`, `bishop`, `queen`, `king`, `bishop`, `knight`, `rook`]
     rows[2] = ['', '', '', '', '', '', '', '']
     rows[3] = ['', '', '', '', '', '', '', '']
     rows[5] = ['', '', '', '', '', '', '', '']
     rows[4] = ['', '', '', '', '', '', '', '']
-    rows[6] = ['', '', '', '', '', '', '', '']
+
+    // this.setBoard()
 
     const keys = Object.keys(rows)
     return(keys.map(key => {
       return(
         <div className = 'board-row'>
         {
-          key <= 1 ? this.render_pieces(rows[key], 'white', key) : key >= 7 ? this.render_pieces(rows[key], 'black', key) : this.render_pieces(rows[key], '', key)
+          key >= 6 ? this.render_pieces(rows[key], 'white', key) : key <= 1 ? this.render_pieces(rows[key], 'black', key) : this.render_pieces(rows[key], '', key)
         }
       </div>
       )}))
@@ -215,7 +273,7 @@ class Board extends React.Component {
 
   render () {
     return (
-      this.render_squares(this.state.NUMBER_ROWS, this.state.NUMBER_COLUMNS)
+      this.render_squares()
     )
   }
 }
