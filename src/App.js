@@ -113,6 +113,20 @@ class Board extends React.Component {
     board.setState({board_state: bs})
   }
 
+  checkMoveAvailability (board, piece_x, piece_y, new_x, new_y, x = 0, y = 0) {
+    const state = board.state.board_state
+    piece_x += x
+    piece_y += y
+
+    while(piece_x !== new_x || piece_y !== new_y) {
+      if(state[piece_x][piece_y] !== 0) return false
+      piece_x += x
+      piece_y += y
+    }
+
+    return true
+  }
+
   moveRook (board, square) {
     const square_name = square.state.piece_name
     const square_color = square.state.piece_color
@@ -122,18 +136,28 @@ class Board extends React.Component {
     const piece_position = board.state.piece_selected.props.position
     const piece_color = piece.state.piece_color
 
+    if(square_color === piece_color) return
+
     let moved = false
-    if(!square_name && square_position[1] === piece_position[1] 
-      && square_position[0] !== piece_position[0]) {
-        moved = true
+    if(square_position[1] === piece_position[1] 
+      && square_position[0] > piece_position[0]) {
+        if(board.checkMoveAvailability(board, ...piece_position, ...square_position, 1))
+          moved = true
     }
-    else if(!square_name && square_position[1] === piece_position[1] 
-      && square_position[0] !== piece_position[0]) {
-        moved = true
+    else if(square_position[1] === piece_position[1] 
+      && square_position[0] < piece_position[0]) {
+        if(board.checkMoveAvailability(board, ...piece_position, ...square_position, -1))
+          moved = true
     }
-    else if(square_name && square_color !== piece_color && (square_position[1]-1 === piece_position[1] || square_position[1]+1 === piece_position[1]) 
+    else if(square_position[1] > piece_position[1] 
       && square_position[0] === piece_position[0]) {
-        moved = true
+        if(board.checkMoveAvailability(board, ...piece_position, ...square_position, null, 1))
+          moved = true
+    }
+    else if(square_position[1] < piece_position[1] 
+      && square_position[0] === piece_position[0]) {
+        if(board.checkMoveAvailability(board, ...piece_position, ...square_position, null, -1))
+          moved = true
     }
     
     if(moved)
@@ -191,15 +215,76 @@ class Board extends React.Component {
   }
 
   moveBishop (board, square) {
+    const square_name = square.state.piece_name
+    const square_color = square.state.piece_color
+    const square_position = square.props.position
 
+    const piece = board.state.piece_selected
+    const piece_position = board.state.piece_selected.props.position
+    const piece_color = piece.state.piece_color
+
+    if(square_color === piece_color) return
+
+    let moved = false
+    const proportion = (square_position[0]-piece_position[0]) / (square_position[1]-piece_position[1])
+    if(proportion !== 1 && proportion !== -1) return 
+    
+    if(square_position[1] > piece_position[1]
+      && square_position[0] > piece_position[0]) {
+        if(board.checkMoveAvailability(board, ...piece_position, ...square_position, 1, 1))
+          moved = true
+    }
+    else if(square_position[1] < piece_position[1] 
+      && square_position[0] < piece_position[0]) {
+        if(board.checkMoveAvailability(board, ...piece_position, ...square_position, -1, -1))
+          moved = true
+    }
+    else if(square_position[1] > piece_position[1] 
+      && square_position[0] < piece_position[0]) {
+        if(board.checkMoveAvailability(board, ...piece_position, ...square_position, -1, 1))
+          moved = true
+    }
+    else if(square_position[1] < piece_position[1] 
+      && square_position[0] > piece_position[0]) {
+        if(board.checkMoveAvailability(board, ...piece_position, ...square_position, 1, -1))
+          moved = true
+    }
+    
+    if(moved)
+      board.movePiece(board, piece, square, piece_position, square_position)
   }
 
   moveQueen (board, square) {
-
+    board.moveRook(board, square)
+    board.moveBishop(board, square)
   }
 
   moveKing (board, square) {
+    const square_name = square.state.piece_name
+    const square_color = square.state.piece_color
+    const square_position = square.props.position
 
+    const piece = board.state.piece_selected
+    const piece_position = board.state.piece_selected.props.position
+    const piece_color = piece.state.piece_color
+
+    if(square_color === piece_color) return
+
+    let moved = false
+    const dist_y = square_position[1] - piece_position[1]
+    const dist_x = square_position[0] - piece_position[0]
+    
+    // + move
+    if(dist_x + dist_y === 1 || dist_x + dist_y === -1)
+        moved = true
+
+    // x move
+    else if((dist_x === 1 || dist_x === -1) && (dist_y === 1 || dist_y === -1))
+        moved = true
+    
+
+    if(moved)
+      board.movePiece(board, piece, square, piece_position, square_position)
   }
 
   handleClick = object => {
