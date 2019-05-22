@@ -38,7 +38,7 @@ class Board extends React.Component {
     bs[6] = [1, 1, 1, 1, 1, 1, 1, 1]
     bs[7] = [2, 3, 4, 5, 6, 4, 3, 2]
 
-    this.state = { hasPiece: false, piece_selected: {}, board_state: bs }
+    this.state = { player: 'white', hasPiece: false, piece_selected: {}, board_state: bs }
   }
 
   putPiece(from, to) {
@@ -61,8 +61,6 @@ class Board extends React.Component {
     
     board.setState({board_state: bs})
     piece.setState({piece_name: 'queen'})
-
-    console.log(board.state.board_state)
   }
 
   movePawn (board, square) {
@@ -99,7 +97,8 @@ class Board extends React.Component {
   movePiece (board, piece, square, piece_position, square_position) {
     board.changeColor(piece)
     board.putPiece(piece, square)
-    board.setState({hasPiece: false, piece_selected: {}})
+    const next_player = piece.state.piece_color === 'white' ? 'black' : 'white'
+    board.setState({player: next_player, hasPiece: false, piece_selected: {}})
 
     board.registerChange(board, ...piece_position, ...square_position)
   }
@@ -297,8 +296,11 @@ class Board extends React.Component {
     // Select piece
     if(!this.state.hasPiece)
     {
-      this.setState({hasPiece: true, piece_selected: object})
-      this.changeColor(object)
+      if(this.state.player === object.state.piece_color)
+      {
+        this.setState({hasPiece: true, piece_selected: object})
+        this.changeColor(object)
+      }
     }
     else if(object === this.state.piece_selected)
     {
@@ -328,7 +330,7 @@ class Board extends React.Component {
     bs[6] = [1, 1, 1, 1, 1, 1, 1, 1]
     bs[7] = [2, 3, 4, 5, 6, 4, 3, 2]
 
-    this.setState({board_state: bs}, () => console.log(this.state.board_state))
+    this.setState({board_state: bs})
 
   }
   
